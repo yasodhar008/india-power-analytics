@@ -12,33 +12,27 @@
   "crons": [
     {
       "path": "/api/fetch-snapshot?snapshot=08:00",
-      "schedule": "30 2 * * *",
-    
+      "schedule": "30 2 * * *"
     },
     {
       "path": "/api/fetch-snapshot?snapshot=13:00",
-      "schedule": "30 7 * * *",
-    
+      "schedule": "30 7 * * *"
     },
     {
       "path": "/api/fetch-snapshot?snapshot=18:00",
-      "schedule": "30 12 * * *",
-      
+      "schedule": "30 12 * * *"
     },
     {
       "path": "/api/fetch-cea-re",
-      "schedule": "30 5 * * *",
-     
+      "schedule": "30 5 * * *"
     },
     {
       "path": "/api/fetch-npp",
-      "schedule": "0 14 * * *",
-     
+      "schedule": "0 14 * * *"
     },
     {
       "path": "/api/fetch-cea-monthly",
-      "schedule": "0 6 1 * *",
-      
+      "schedule": "0 6 1 * *"
     }
   ],
   "headers": [

@@ -46,20 +46,6 @@ export async function fetchHourlyGeneration(date) {
     pivot[r.hour][cleanSource] = r.value_mw
   })
   return { rows: Object.values(pivot).sort((a, b) => a.hour - b.hour), sources }
-  const hours = Array.from({ length: 24 }, (_, i) => i);
-  const sources = ["SOLAR", "WIND", "THERMAL", "HYDRO", "NUCLEAR", "GAS"];
-  const pivot = {};
-  hours.forEach((h) => {
-    pivot[h] = { hour: h };
-  });
-  data.forEach((r) => {
-    if (!pivot[r.hour]) pivot[r.hour] = { hour: r.hour };
-    pivot[r.hour][r.source] = r.value_mw;
-  });
-  return {
-    rows: Object.values(pivot).sort((a, b) => a.hour - b.hour),
-    sources,
-  };
 }
 
 // ── Fetch hourly demand for a date ────────────────────────────────────────

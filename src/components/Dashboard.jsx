@@ -120,11 +120,6 @@ export default function Dashboard({ selectedDate, onDateChange }) {
         >
           {dates.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
-        {summary?.data_sources && (
-          <span className="source-badge">
-            Sources: {summary.data_sources.join(' · ')}
-          </span>
-        )}
       </div>
 
       {loading ? (

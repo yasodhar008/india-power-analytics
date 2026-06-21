@@ -182,9 +182,9 @@ async function updateICEDCapacity(year, month, figures) {
   if (figures.hydro_gw) updates.push({ fy_year: fy, fuel_type: 'Hydro', installed_gw: figures.hydro_gw })
   if (figures.nuclear_gw) updates.push({ fy_year: fy, fuel_type: 'Nuclear', installed_gw: figures.nuclear_gw })
 
-  for (const u of updates) {
+  if (updates.length > 0) {
     await supabase.from('iced_plf_trends')
-      .upsert(u, { onConflict: 'fy_year,fuel_type' })
+      .upsert(updates, { onConflict: 'fy_year,fuel_type' })
   }
   console.log(`  ICED capacity updated for ${fy}: solar=${figures.solar_gw}GW wind=${figures.wind_gw}GW`)
 }

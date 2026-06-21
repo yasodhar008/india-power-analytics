@@ -4,7 +4,19 @@ export function parseGenerationCSV(text) {
   const lines = text.trim().split('\n')
   const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''))
   const rows = lines.slice(1).map(line => {
-    const cols = (line.match(/(".*?"|[^,]+)/g) || []).map(c => c.replace(/"/g, '').trim())
+    const cols = [];
+    let curr = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"') inQuotes = !inQuotes;
+      else if (line[i] === ',' && !inQuotes) {
+        cols.push(curr.trim());
+        curr = '';
+      } else {
+        curr += line[i];
+      }
+    }
+    cols.push(curr.trim());
     const obj = {}
     headers.forEach((h, i) => { obj[h] = cols[i] || '' })
     return obj
@@ -14,7 +26,8 @@ export function parseGenerationCSV(text) {
   const bySourceHour = {}
   rows.forEach(r => {
     const src = (r['Source'] || r['source'] || '').trim().toUpperCase().replace(' GENERATION', '')
-    const val = parseFloat((r['Value'] || r['value'] || '0').replace(/,/g, '')) || 0
+    const valStr = r['Value'] || r['value'] || r['Source/Value'] || r['source/value'] || r['Source/value'] || r['source/Value'] || '0';
+    const val = parseFloat(String(valStr).replace(/,/g, '')) || 0
     const dtStr = r['Date & Time'] || r['DateTime'] || r['date'] || ''
     const timePart = dtStr.includes(' ') ? dtStr.split(' ')[1] : dtStr
     const hour = parseInt(timePart?.split(':')[0] || '0', 10)
@@ -36,7 +49,19 @@ export function parseDemandCSV(text) {
   const lines = text.trim().split('\n')
   const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''))
   const rows = lines.slice(1).map(line => {
-    const cols = (line.match(/(".*?"|[^,]+)/g) || []).map(c => c.replace(/"/g, '').trim())
+    const cols = [];
+    let curr = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"') inQuotes = !inQuotes;
+      else if (line[i] === ',' && !inQuotes) {
+        cols.push(curr.trim());
+        curr = '';
+      } else {
+        curr += line[i];
+      }
+    }
+    cols.push(curr.trim());
     const obj = {}
     headers.forEach((h, i) => { obj[h] = cols[i] || '' })
     return obj
@@ -44,7 +69,8 @@ export function parseDemandCSV(text) {
 
   const byHour = {}
   rows.forEach(r => {
-    const val = parseFloat((r['Value'] || r['value'] || '0').replace(/,/g, '')) || 0
+    const valStr = r['Value'] || r['value'] || r['Source/Value'] || r['source/value'] || r['Source/value'] || r['source/Value'] || '0';
+    const val = parseFloat(String(valStr).replace(/,/g, '')) || 0
     const dtStr = r['Time'] || r['Date & Time'] || ''
     const timePart = dtStr.includes(' ') ? dtStr.split(' ')[1] : dtStr
     const hour = parseInt(timePart?.split(':')[0] || '0', 10)

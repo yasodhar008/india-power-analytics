@@ -236,6 +236,9 @@ async function updateICEDCapacity(year, month, figures) {
     await supabase
       .from("iced_plf_trends")
       .upsert(u, { onConflict: "fy_year,fuel_type" });
+  if (updates.length > 0) {
+    await supabase.from('iced_plf_trends')
+      .upsert(updates, { onConflict: 'fy_year,fuel_type' })
   }
   console.log(
     `  ICED capacity updated for ${fy}: solar=${figures.solar_gw}GW wind=${figures.wind_gw}GW`,

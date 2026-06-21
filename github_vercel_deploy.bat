@@ -65,8 +65,8 @@ echo   Vercel will open a browser for login.
 echo.
 pause
 
-set SUPABASE_URL=https://bfmstdkntpseyyhiaqza.supabase.co
-set SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmbXN0ZGtudHBzZXl5aGlhcXphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MTgwNjAsImV4cCI6MjA5Njk5NDA2MH0.Eh57unrBX6uSRbQFj86oSHpgRv0ks41mS_ScHhM5F04
+
+
 
 npx vercel deploy . --prod --name india-power-analytics --yes ^
   --env SUPABASE_URL="!SUPABASE_URL!" ^

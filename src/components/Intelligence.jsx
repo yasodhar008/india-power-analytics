@@ -395,10 +395,6 @@ export default function Intelligence() {
           <h2 className="page-title">Strategic intelligence</h2>
           <p className="page-sub">ICED · CEA · MoP · MNRE — sector trends and BESS opportunity mapping</p>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-dim)', textAlign: 'right', lineHeight: 1.6 }}>
-          Sources: iced.niti.gov.in · cea.nic.in<br />
-          Updated: monthly / annual
-        </div>
       </div>
 
       {/* National headline KPIs */}

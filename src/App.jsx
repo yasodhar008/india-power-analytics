@@ -9,12 +9,15 @@ import Intelligence from './components/Intelligence'
 import Sources      from './components/Sources'
 import './index.css'
 
-const TABS = [
+const PUBLIC_TABS = [
   { id: 'dashboard',    label: 'Dashboard' },
   { id: 'snapshots',    label: 'Snapshots' },
   { id: 'history',      label: 'Trends' },
   { id: 'regional',     label: 'Regional' },
   { id: 'intelligence', label: '🔋 Intelligence' },
+]
+
+const ADMIN_TABS = [
   { id: 'upload',       label: 'Upload' },
   { id: 'sources',      label: 'Sources' },
   { id: 'status',       label: 'Status ◉' },
@@ -24,6 +27,9 @@ export default function App() {
   const [tab, setTab] = useState('dashboard')
   const [selectedDate, setSelectedDate] = useState(null)
 
+  const isAdmin = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('admin') === 'true'
+  const TABS = isAdmin ? [...PUBLIC_TABS, ...ADMIN_TABS] : PUBLIC_TABS
+
   return (
     <div className="app">
       <header className="header">
@@ -32,7 +38,6 @@ export default function App() {
             <span className="brand-mark">⚡</span>
             <div>
               <div className="brand-name">India Power Analytics</div>
-              <div className="brand-sub">CEA · NPP · ICED · NITI Aayog</div>
             </div>
           </div>
           <nav className="nav">

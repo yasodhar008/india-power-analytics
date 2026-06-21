@@ -101,8 +101,8 @@ echo -e "${GREEN}  ✓ Code pushed to: https://github.com/${GH_USER}/${REPO_NAME
 echo ""
 echo -e "${BOLD}Step 3 — Adding GitHub secrets for CI/CD${NC}"
 
-SUPABASE_URL="https://bfmstdkntpseyyhiaqza.supabase.co"
-SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmbXN0ZGtudHBzZXl5aGlhcXphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MTgwNjAsImV4cCI6MjA5Njk5NDA2MH0.Eh57unrBX6uSRbQFj86oSHpgRv0ks41mS_ScHhM5F04"
+
+
 
 add_secret() {
   local name=$1; local value=$2

@@ -74,12 +74,8 @@ except ImportError:
 
 # ── Config ────────────────────────────────────────────────────────────────
 IST          = ZoneInfo("Asia/Kolkata")
-SUPABASE_URL = "https://bfmstdkntpseyyhiaqza.supabase.co"
-SUPABASE_KEY = (
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
-    ".eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmbXN0ZGtudHBzZXl5aGlhcXphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MTgwNjAsImV4cCI6MjA5Njk5NDA2MH0"
-    ".Eh57unrBX6uSRbQFj86oSHpgRv0ks41mS_ScHhM5F04"
-)
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_KEY = os.environ.get('SUPABASE_ANON_KEY')
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)-7s  %(message)s",
                     datefmt="%H:%M:%S", handlers=[logging.StreamHandler(sys.stdout)])

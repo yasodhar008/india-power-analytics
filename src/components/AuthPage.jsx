@@ -68,7 +68,7 @@ function AuthPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className="text-2xl font-bold tracking-tight">BatteryLab</span>
+            <span className="text-2xl font-bold tracking-tight">VTKenergy.com</span>
             <span className="text-xs font-semibold bg-[#00c875]/20 text-[#00c875] px-2 py-0.5 rounded-full ml-1">v2.0</span>
           </div>
 
@@ -105,7 +105,7 @@ function AuthPage() {
               {isSignUp ? 'Create an account' : 'Welcome back'}
             </h2>
             <p className="text-gray-500">
-              {isSignUp ? 'Sign up to get started with BatteryLab' : 'Sign in to your BatteryLab account'}
+              {isSignUp ? 'Sign up to get started with VTKenergy.com' : 'Sign in to your VTKenergy.com account'}
             </p>
           </div>
 

@@ -49,7 +49,7 @@ export default function App() {
           <div className="brand">
             <span className="brand-mark">⚡</span>
             <div>
-              <div className="brand-name">India Power Analytics</div>
+              <div className="brand-name">VTKenergy.com</div>
             </div>
           </div>
           <nav className="nav">

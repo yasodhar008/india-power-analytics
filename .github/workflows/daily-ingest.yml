@@ -1,0 +1,36 @@
+name: Daily NPP Ingest
+
+on:
+  schedule:
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Date to ingest (YYYY-MM-DD)'
+        required: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Resolve date
+        id: date
+        run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            echo "date=${{ github.event.inputs.date }}" >> $GITHUB_OUTPUT
+          else
+            echo "date=$(TZ=Asia/Kolkata date -d yesterday +%Y-%m-%d)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Fetch NPP data
+        run: |
+          curl -sf --max-time 60 \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.VERCEL_PRODUCTION_URL }}/api/fetch-npp?date=${{ steps.date.outputs.date }}"
+
+      - name: Fetch CEA RE data
+        run: |
+          curl -sf --max-time 60 \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.VERCEL_PRODUCTION_URL }}/api/fetch-cea-re?date=${{ steps.date.outputs.date }}" || true

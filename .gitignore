@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment files (never commit these)
+.env
+.env.local
+.env.production
+.env.development
+
+# Logs
+*.log
+cea_downloader.log
+fetch_power_data.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Downloaded data (don't commit raw data files)
+power_data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Vercel
+.vercel/
+
+# Old zip packages
+*.zip

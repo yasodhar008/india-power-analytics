@@ -1,0 +1,238 @@
+/* ── Reset & Base ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+
+:root {
+  --bg-base:     #0A0F1E;
+  --bg-surface:  #111827;
+  --bg-elevated: #1E293B;
+  --bg-hover:    #243047;
+  --border:      rgba(255,255,255,0.07);
+  --border-soft: rgba(255,255,255,0.04);
+  --text-pri:    #E2E8F0;
+  --text-sec:    #94A3B8;
+  --text-dim:    #475569;
+  --solar:       #F59E0B;
+  --wind:        #10B981;
+  --thermal:     #EF4444;
+  --hydro:       #3B82F6;
+  --accent:      #6366F1;
+  --font-sans:   'Inter', -apple-system, sans-serif;
+  --font-mono:   'JetBrains Mono', monospace;
+}
+
+html, body, #root { height: 100%; background: var(--bg-base); color: var(--text-pri); font-family: var(--font-sans) }
+body { font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased }
+
+/* ── App Layout ──────────────────────────────────────────────────── */
+.app { min-height: 100vh; display: flex; flex-direction: column }
+
+/* ── Header ──────────────────────────────────────────────────────── */
+.header {
+  border-bottom: 1px solid var(--border);
+  background: rgba(10,15,30,0.95);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100;
+}
+.header-inner {
+  max-width: 1400px; margin: 0 auto;
+  padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 60px;
+}
+.brand { display: flex; align-items: center; gap: 12px }
+.brand-mark { font-size: 22px; line-height: 1 }
+.brand-name { font-size: 15px; font-weight: 600; color: var(--text-pri); letter-spacing: -0.3px }
+.brand-sub { font-size: 11px; color: var(--text-dim); margin-top: 1px }
+
+.nav { display: flex; gap: 4px }
+.nav-btn {
+  padding: 6px 14px; font-size: 13px; font-weight: 400;
+  border: 1px solid transparent; border-radius: 6px;
+  background: transparent; color: var(--text-sec); cursor: pointer;
+  transition: all 0.15s; font-family: var(--font-sans);
+}
+.nav-btn:hover { background: var(--bg-elevated); color: var(--text-pri) }
+.nav-btn.active { background: var(--bg-elevated); color: var(--text-pri); border-color: var(--border) }
+
+/* ── Main ────────────────────────────────────────────────────────── */
+.main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 28px 24px }
+
+.dashboard { display: flex; flex-direction: column; gap: 16px }
+
+/* ── Date bar ────────────────────────────────────────────────────── */
+.date-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap }
+.date-label { font-size: 12px; color: var(--text-dim) }
+.date-select {
+  font-size: 13px; padding: 6px 10px;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg-elevated); color: var(--text-pri);
+  font-family: var(--font-sans); cursor: pointer;
+}
+.source-badge {
+  font-size: 11px; padding: 2px 8px;
+  border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text-dim); font-family: var(--font-mono);
+}
+
+/* ── KPI Grid ────────────────────────────────────────────────────── */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px }
+.kpi-card {
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px;
+}
+.kpi-label { font-size: 11px; font-weight: 500; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px }
+.kpi-value { font-size: 28px; font-weight: 300; color: var(--text-pri); letter-spacing: -0.5px; line-height: 1 }
+.kpi-unit { font-size: 14px; color: var(--text-sec); font-weight: 400 }
+.kpi-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px }
+
+/* ── Chart Cards ─────────────────────────────────────────────────── */
+.chart-card {
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 20px;
+}
+.chart-card.wide { width: 100% }
+.chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px }
+.chart-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px }
+.chart-title { font-size: 13px; font-weight: 500; color: var(--text-pri); margin-bottom: 2px }
+.chart-sub { font-size: 11px; color: var(--text-dim); margin-bottom: 16px }
+
+/* ── Tooltip ──────────────────────────────────────────────────────── */
+.chart-tooltip {
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px; min-width: 160px;
+}
+.tt-label { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; font-family: var(--font-mono) }
+.tt-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-sec); margin: 3px 0 }
+.tt-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0 }
+.tt-val { margin-left: auto; font-family: var(--font-mono); color: var(--text-pri); font-size: 12px }
+
+/* ── Page head ───────────────────────────────────────────────────── */
+.page-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 4px }
+.page-title { font-size: 20px; font-weight: 500; color: var(--text-pri); letter-spacing: -0.3px }
+.page-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px }
+
+/* ── Upload ──────────────────────────────────────────────────────── */
+.upload-date-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap }
+.field-label { font-size: 12px; color: var(--text-sec); font-weight: 500 }
+.field-hint { font-size: 11px; color: var(--text-dim) }
+.drop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px }
+.drop-zone {
+  border: 1.5px dashed var(--border); border-radius: 10px;
+  padding: 28px 20px; text-align: center; cursor: pointer;
+  transition: all 0.15s; background: var(--bg-surface);
+}
+.drop-zone:hover { border-color: var(--accent); background: var(--bg-elevated) }
+.drop-zone.has-file { border-color: rgba(99,102,241,0.5); border-style: solid }
+.drop-zone.status-ok { border-color: rgba(16,185,129,0.5) }
+.dz-icon { font-size: 28px; margin-bottom: 10px }
+.dz-label { font-size: 13px; font-weight: 500; color: var(--text-pri); margin-bottom: 4px }
+.dz-desc { font-size: 11px; color: var(--text-dim); line-height: 1.5 }
+.dz-ok { font-size: 11px; color: var(--wind); margin-top: 6px; font-weight: 500 }
+.upload-btn {
+  padding: 12px 28px; font-size: 14px; font-weight: 500;
+  border: none; border-radius: 8px;
+  background: var(--accent); color: #fff; cursor: pointer;
+  width: 260px; transition: opacity 0.15s; font-family: var(--font-sans);
+}
+.upload-btn:hover { opacity: 0.85 }
+.upload-btn.loading { opacity: 0.6; cursor: not-allowed }
+.log-panel {
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px;
+  font-family: var(--font-mono); font-size: 12px; max-height: 180px; overflow-y: auto;
+}
+.log-line { display: flex; gap: 12px; padding: 3px 0; border-bottom: 1px solid var(--border-soft) }
+.log-line:last-child { border-bottom: none }
+.log-time { color: var(--text-dim); flex-shrink: 0 }
+.log-line.ok span:last-child { color: var(--wind) }
+.log-line.err span:last-child { color: var(--thermal) }
+.log-line.warn span:last-child { color: var(--solar) }
+.upload-info-box {
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 20px;
+}
+.info-title { font-size: 12px; font-weight: 500; color: var(--text-sec); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em }
+.info-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--border-soft) }
+.info-row:last-child { border-bottom: none }
+.info-label { font-size: 12px; color: var(--text-dim); width: 160px; flex-shrink: 0 }
+.info-link { font-size: 12px; color: var(--accent) }
+
+/* ── Table ───────────────────────────────────────────────────────── */
+.table-wrap { overflow-x: auto }
+.data-table { width: 100%; border-collapse: collapse; font-size: 12px }
+.data-table th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 500; color: var(--text-dim); border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.04em }
+.data-table td { padding: 8px 12px; border-bottom: 1px solid var(--border-soft); color: var(--text-sec) }
+.data-table tr:last-child td { border-bottom: none }
+.data-table tr:hover td { background: var(--bg-elevated) }
+.state-name { color: var(--text-pri); font-weight: 500 }
+.region-tag { font-size: 10px; padding: 2px 6px; border-radius: 3px; background: var(--bg-elevated); color: var(--text-dim); white-space: nowrap }
+.num { font-family: var(--font-mono); text-align: right }
+.num.solar { color: var(--solar) }
+.num.wind { color: var(--wind) }
+.num.bold { color: var(--text-pri); font-weight: 500 }
+
+/* ── States ──────────────────────────────────────────────────────── */
+.loading-state { display: flex; align-items: center; gap: 12px; padding: 60px; justify-content: center; color: var(--text-dim); font-size: 13px }
+.spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite }
+@keyframes spin { to { transform: rotate(360deg) } }
+.empty-state { text-align: center; padding: 80px 20px }
+.empty-icon { font-size: 40px; margin-bottom: 16px }
+.empty-title { font-size: 16px; font-weight: 500; color: var(--text-pri); margin-bottom: 6px }
+.empty-sub { font-size: 13px; color: var(--text-dim) }
+.error-box { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 16px; color: var(--thermal); font-size: 13px; margin: 20px }
+
+/* ── Footer ──────────────────────────────────────────────────────── */
+.footer {
+  display: flex; justify-content: space-between; padding: 12px 24px;
+  border-top: 1px solid var(--border);
+  font-size: 11px; color: var(--text-dim);
+  max-width: 1400px; margin: 0 auto; width: 100%;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr) }
+  .chart-row { grid-template-columns: 1fr }
+  .drop-grid { grid-template-columns: 1fr }
+}
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr }
+  .header-inner { flex-direction: column; height: auto; padding: 12px 16px; gap: 10px }
+  .main { padding: 16px }
+  .nav { flex-wrap: wrap; justify-content: center }
+}
+
+/* ── Snapshot cards ───────────────────────────────────────────────── */
+.snap-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px }
+.snap-card {
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-top: 3px solid transparent; border-radius: 10px; padding: 16px;
+}
+.snap-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px }
+.snap-icon { font-size: 22px; line-height: 1; margin-top: 2px }
+.snap-time { font-size: 15px; font-weight: 600; letter-spacing: -0.3px }
+.snap-label { font-size: 11px; color: var(--text-dim); margin-top: 1px }
+.status-pill {
+  margin-left: auto; font-size: 10px; font-weight: 600;
+  padding: 2px 8px; border-radius: 20px; letter-spacing: 0.05em;
+}
+.status-pill.ok { background: rgba(16,185,129,0.15); color: var(--wind) }
+.status-pill.pending { background: rgba(148,163,184,0.1); color: var(--text-dim) }
+.snap-metrics { display: flex; flex-direction: column; gap: 8px }
+.snap-metric { display: flex; justify-content: space-between; align-items: center }
+.sm-label { font-size: 12px; color: var(--text-dim) }
+.sm-val { font-size: 14px; font-weight: 500; font-family: var(--font-mono); color: var(--text-pri) }
+.sm-val.solar { color: var(--solar) }
+.sm-val.wind { color: var(--wind) }
+.sm-val.accent { color: #818CF8 }
+.snap-note {
+  font-size: 11px; color: var(--text-dim); line-height: 1.5;
+  margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--border-soft);
+  font-style: italic;
+}
+.snap-empty { font-size: 12px; color: var(--text-dim); padding: 12px 0; text-align: center }
+.sr-label { color: var(--text-sec); font-size: 12px; padding: 7px 12px }
+.sr-val { font-family: var(--font-mono); font-size: 12px; text-align: right; padding: 7px 12px }
+.sr-delta { font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); padding: 7px 12px }
+.ramp-table { margin-top: 8px }
+@media(max-width:700px){ .snap-grid { grid-template-columns: 1fr } }

@@ -1,0 +1,27 @@
+# India Power Analytics — Python dependencies
+# Install all: pip install -r requirements.txt
+
+# ── Core ──────────────────────────────────────────────────────────────────
+requests>=2.31.0          # HTTP downloads (NPP XLS direct fetch)
+pandas>=2.0.0             # CSV parsing and data manipulation
+
+# ── Supabase ──────────────────────────────────────────────────────────────
+supabase>=2.4.0           # Supabase Python client
+
+# ── File parsing ──────────────────────────────────────────────────────────
+pdfplumber>=0.10.0        # CEA RE PDF table extraction (state-wise wind/solar)
+openpyxl>=3.1.0           # NPP dgr2/dgr3 XLS parsing (station/unit level)
+
+# ── Browser automation ─────────────────────────────────────────────────────
+selenium>=4.18.0          # CEA OPM page automation
+webdriver-manager>=4.0.1  # Auto-installs ChromeDriver
+
+# ── Scheduler ─────────────────────────────────────────────────────────────
+schedule>=1.2.0           # Daily cron-like runner (08:15, 13:15, 18:15 IST)
+
+# ── Python standard library (no install needed) ───────────────────────────
+# zoneinfo   — IST timezone (Python 3.9+; for 3.8 use: pip install backports.zoneinfo)
+# pathlib    — file paths
+# subprocess — calls upload_to_supabase.py from cea_downloader.py
+# argparse   — CLI arguments
+# logging    — log to file + stdout

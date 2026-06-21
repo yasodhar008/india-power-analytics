@@ -2,8 +2,9 @@
   "name": "india-power-analytics",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "scripts": {
     "dev": "vite",

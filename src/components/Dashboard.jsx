@@ -89,6 +89,12 @@ export default function Dashboard({ selectedDate, onDateChange }) {
     const demandVal = d?.value_mw || 0
     return {
       ...row,
+      SOLAR: row.SOLAR || 0,
+      WIND: row.WIND || 0,
+      HYDRO: row.HYDRO || 0,
+      NUCLEAR: row.NUCLEAR || 0,
+      GAS: row.GAS || 0,
+      THERMAL: row.THERMAL || 0,
       DEMAND: demandVal,
       RE_SHARE_PCT: demandVal > 0 ? (reTotal / demandVal) * 100 : 0
     }
@@ -142,7 +148,11 @@ export default function Dashboard({ selectedDate, onDateChange }) {
           </div>
 
           {/* Daily Generation Mix Profile */}
-          <div className="chart-card wide" style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+        <div className="chart-card wide" style={{
+          background: 'linear-gradient(to bottom, var(--bg-surface), #0f1524)',
+          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2), 0 10px 15px -3px rgba(0,0,0,0.1)',
+          border: '1px solid rgba(255,255,255,0.05)'
+        }}>
             <div className="chart-head">
               <div>
                 <div className="chart-title">Daily Generation Mix Profile</div>

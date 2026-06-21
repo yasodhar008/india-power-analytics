@@ -13,32 +13,32 @@
     {
       "path": "/api/fetch-snapshot?snapshot=08:00",
       "schedule": "30 2 * * *",
-      "comment": "08:00 IST — morning ramp. Source: CEA OPM daily generation report"
+    
     },
     {
       "path": "/api/fetch-snapshot?snapshot=13:00",
       "schedule": "30 7 * * *",
-      "comment": "13:00 IST — solar peak. Source: CEA OPM daily generation report"
+    
     },
     {
       "path": "/api/fetch-snapshot?snapshot=18:00",
       "schedule": "30 12 * * *",
-      "comment": "18:00 IST — evening peak. Source: CEA OPM daily generation report"
+      
     },
     {
       "path": "/api/fetch-cea-re",
       "schedule": "30 5 * * *",
-      "comment": "11:00 IST — CEA RE daily PDF (published ~10:00 IST). Source: cea.nic.in/renewable-generation-report"
+     
     },
     {
       "path": "/api/fetch-npp",
       "schedule": "0 14 * * *",
-      "comment": "19:30 IST — NPP daily XLS reports (dgr1-12). Source: npp.gov.in/publishedReports"
+     
     },
     {
       "path": "/api/fetch-cea-monthly",
       "schedule": "0 6 1 * *",
-      "comment": "1st of each month 11:30 IST — CEA monthly archive. Source: cea.nic.in/monthly-reports-archive"
+      
     }
   ],
   "headers": [

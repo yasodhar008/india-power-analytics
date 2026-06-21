@@ -7,6 +7,9 @@ import Snapshots    from './components/Snapshots'
 import Status       from './components/Status'
 import Intelligence from './components/Intelligence'
 import Sources      from './components/Sources'
+import AuthPage     from './components/AuthPage'
+import Projects     from './components/Projects'
+import { useAuth }  from './lib/AuthContext'
 import './index.css'
 
 const PUBLIC_TABS = [
@@ -15,6 +18,7 @@ const PUBLIC_TABS = [
   { id: 'history',      label: 'Trends' },
   { id: 'regional',     label: 'Regional' },
   { id: 'intelligence', label: '🔋 Intelligence' },
+  { id: 'projects',     label: 'Projects' },
 ]
 
 const ADMIN_TABS = [
@@ -24,14 +28,22 @@ const ADMIN_TABS = [
 ]
 
 export default function App() {
+  const { user, profile, isAdmin, loading, signOut } = useAuth()
   const [tab, setTab] = useState('dashboard')
   const [selectedDate, setSelectedDate] = useState(null)
 
-  const isAdmin = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('admin') === 'true'
+  if (loading) {
+    return <div className="flex min-h-screen items-center justify-center">Loading...</div>
+  }
+
+  if (!user) {
+    return <AuthPage />
+  }
+
   const TABS = isAdmin ? [...PUBLIC_TABS, ...ADMIN_TABS] : PUBLIC_TABS
 
   return (
-    <div className="app">
+    <div className="app bg-gray-50 min-h-screen">
       <header className="header">
         <div className="header-inner">
           <div className="brand">
@@ -47,6 +59,12 @@ export default function App() {
                 onClick={() => setTab(t.id)}
               >{t.label}</button>
             ))}
+            <button
+              className="nav-btn text-red-500 hover:text-red-700 ml-4"
+              onClick={signOut}
+            >
+              Sign Out
+            </button>
           </nav>
         </div>
       </header>
@@ -57,6 +75,7 @@ export default function App() {
         {tab === 'history'      && <History />}
         {tab === 'regional'     && <Regional />}
         {tab === 'intelligence' && <Intelligence />}
+        {tab === 'projects'     && <Projects />}
         {tab === 'upload'       && <Upload onUploaded={() => setTab('dashboard')} />}
         {tab === 'sources'      && <Sources />}
         {tab === 'status'       && <Status />}

@@ -85,16 +85,32 @@ export default function Dashboard({ selectedDate, onDateChange }) {
   // Merge demand into gen rows for the overview chart
   const mergedRows = genData.map(row => {
     const d = demandData.find(r => r.hour === row.hour)
-    const reTotal = (row.SOLAR || 0) + (row.WIND || 0) + (row.HYDRO || 0)
     const demandVal = d?.value_mw || 0
+
+    const solar = row.SOLAR || 0
+    const wind = row.WIND || 0
+    const hydro = row.HYDRO || 0
+    const nuclear = row.NUCLEAR || 0
+    const gas = row.GAS || 0
+
+    let thermal = row.THERMAL || 0
+
+    // Logically calculate thermal if it is zero or missing
+    if (thermal === 0 && demandVal > 0) {
+      const otherGen = solar + wind + hydro + nuclear + gas;
+      thermal = Math.max(0, demandVal - otherGen);
+    }
+
+    const reTotal = solar + wind + hydro;
+
     return {
       ...row,
-      SOLAR: row.SOLAR || 0,
-      WIND: row.WIND || 0,
-      HYDRO: row.HYDRO || 0,
-      NUCLEAR: row.NUCLEAR || 0,
-      GAS: row.GAS || 0,
-      THERMAL: row.THERMAL || 0,
+      SOLAR: solar,
+      WIND: wind,
+      HYDRO: hydro,
+      NUCLEAR: nuclear,
+      GAS: gas,
+      THERMAL: thermal,
       DEMAND: demandVal,
       RE_SHARE_PCT: demandVal > 0 ? (reTotal / demandVal) * 100 : 0
     }

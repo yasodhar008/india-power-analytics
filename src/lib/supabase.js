@@ -7,12 +7,16 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ── Fetch available dates ─────────────────────────────────────────────────
 export async function fetchAvailableDates() {
+  // Fetch from power_generation instead of summary to ensure we have actual chart data
   const { data, error } = await supabase
-    .from("power_daily_summary")
+    .from("power_generation")
     .select("data_date")
     .order("data_date", { ascending: false });
   if (error) throw error;
-  return data.map((r) => r.data_date);
+
+  // Return unique dates since power_generation has multiple rows per date
+  const uniqueDates = [...new Set(data.map((r) => r.data_date))];
+  return uniqueDates;
 }
 
 // ── Fetch daily summary history (for trend charts) ────────────────────────

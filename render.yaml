@@ -1,0 +1,67 @@
+services:
+  - type: web
+    name: VTKenergy
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: PORT
+        value: 10000
+
+  - type: cron
+    name: VTKenergy-cron-snapshot-0800
+    env: node
+    region: singapore
+    schedule: "30 2 * * *"
+    buildCommand: ""
+    startCommand: "curl -sS ${RENDER_EXTERNAL_URL}/api/fetch-snapshot?snapshot=08:00 || true"
+
+  - type: cron
+    name: VTKenergy-cron-snapshot-1300
+    env: node
+    region: singapore
+    schedule: "30 7 * * *"
+    buildCommand: ""
+    startCommand: "curl -sS ${RENDER_EXTERNAL_URL}/api/fetch-snapshot?snapshot=13:00 || true"
+
+  - type: cron
+    name: VTKenergy-cron-snapshot-1800
+    env: node
+    region: singapore
+    schedule: "30 12 * * *"
+    buildCommand: ""
+    startCommand: "curl -sS ${RENDER_EXTERNAL_URL}/api/fetch-snapshot?snapshot=18:00 || true"
+
+  - type: cron
+    name: VTKenergy-cron-cea-re
+    env: node
+    region: singapore
+    schedule: "30 5 * * *"
+    buildCommand: ""
+    startCommand: "curl -sS ${RENDER_EXTERNAL_URL}/api/fetch-cea-re || true"
+
+  - type: cron
+    name: VTKenergy-cron-npp
+    env: node
+    region: singapore
+    schedule: "0 14 * * *"
+    buildCommand: ""
+    startCommand: "curl -sS ${RENDER_EXTERNAL_URL}/api/fetch-npp || true"
+
+  - type: cron
+    name: VTKenergy-cron-cea-monthly
+    env: node
+    region: singapore
+    schedule: "0 6 1 * *"
+    buildCommand: ""
+    startCommand: "curl -sS ${RENDER_EXTERNAL_URL}/api/fetch-cea-monthly || true"

@@ -5,8 +5,11 @@ import { format, parseISO } from 'date-fns'
 
 const SNAPSHOTS = [
   { key: '08:00', label: 'Morning ramp',  icon: '🌅', color: '#F97316' },
+  { key: '10:00', label: 'Mid morning',   icon: '🌤️', color: '#FBBF24' },
   { key: '13:00', label: 'Solar peak',    icon: '☀️',  color: '#EAB308' },
+  { key: '15:00', label: 'Late afternoon',icon: '⛅',  color: '#D97706' },
   { key: '18:00', label: 'Evening peak',  icon: '🌆', color: '#8B5CF6' },
+  { key: '20:00', label: 'Night load',    icon: '🌙', color: '#4F46E5' },
 ]
 
 function StatRow({ label, morning, solar, evening, unit = 'GW', divisor = 1000 }) {

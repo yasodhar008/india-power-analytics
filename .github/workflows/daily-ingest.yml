@@ -1,8 +1,8 @@
-name: Daily NPP Ingest
+name: Hourly & Daily Ingest
 
 on:
   schedule:
-    - cron: '0 14 * * *'
+    - cron: '0 * * * *' # Every hour
   workflow_dispatch:
     inputs:
       date:
@@ -20,17 +20,27 @@ jobs:
           if [ -n "${{ github.event.inputs.date }}" ]; then
             echo "date=${{ github.event.inputs.date }}" >> $GITHUB_OUTPUT
           else
-            echo "date=$(TZ=Asia/Kolkata date -d yesterday +%Y-%m-%d)" >> $GITHUB_OUTPUT
+            echo "date=$(TZ=Asia/Kolkata date +%Y-%m-%d)" >> $GITHUB_OUTPUT
           fi
+          echo "hour=$(TZ=Asia/Kolkata date +%H:00)" >> $GITHUB_OUTPUT
+          echo "yesterday=$(TZ=Asia/Kolkata date -d yesterday +%Y-%m-%d)" >> $GITHUB_OUTPUT
 
-      - name: Fetch NPP data
+      - name: Fetch Snapshot (Hourly)
         run: |
           curl -sf --max-time 60 \
             -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
-            "${{ secrets.VERCEL_PRODUCTION_URL }}/api/fetch-npp?date=${{ steps.date.outputs.date }}"
+            "${{ secrets.VERCEL_PRODUCTION_URL }}/api/fetch-snapshot?date=${{ steps.date.outputs.date }}&snapshot=${{ steps.date.outputs.hour }}" || true
 
-      - name: Fetch CEA RE data
+      - name: Fetch CEA RE data (11:00 IST)
+        if: steps.date.outputs.hour == '11:00' || github.event_name == 'workflow_dispatch'
         run: |
           curl -sf --max-time 60 \
             -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
             "${{ secrets.VERCEL_PRODUCTION_URL }}/api/fetch-cea-re?date=${{ steps.date.outputs.date }}" || true
+
+      - name: Fetch NPP data (19:00 IST)
+        if: steps.date.outputs.hour == '19:00' || github.event_name == 'workflow_dispatch'
+        run: |
+          curl -sf --max-time 60 \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.VERCEL_PRODUCTION_URL }}/api/fetch-npp?date=${{ steps.date.outputs.yesterday }}" || true

@@ -39,10 +39,10 @@ export async function fetchHourlyGeneration(date) {
   const hours = Array.from({ length: 24 }, (_, i) => i)
   const sources = ['SOLAR', 'WIND', 'THERMAL', 'HYDRO', 'NUCLEAR', 'GAS']
   const pivot = {}
-  hours.forEach(h => { pivot[h] = { hour: h } })
+  hours.forEach(h => { pivot[h] = { hour: h, SOLAR: 0, WIND: 0, THERMAL: 0, HYDRO: 0, NUCLEAR: 0, GAS: 0 } })
   data.forEach(r => {
     if (!pivot[r.hour]) pivot[r.hour] = { hour: r.hour }
-    const cleanSource = (r.source || '').replace(' GENERATION', '')
+    const cleanSource = (r.source || '').toUpperCase().replace(' GENERATION', '').trim()
     pivot[r.hour][cleanSource] = r.value_mw
   })
   return { rows: Object.values(pivot).sort((a, b) => a.hour - b.hour), sources }

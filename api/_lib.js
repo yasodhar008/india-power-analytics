@@ -12,10 +12,7 @@ export const todayIST = () => nowIST().toISOString().split("T")[0];
 
 export function currentSnapshot() {
   const h = nowIST().getUTCHours();
-  if (h < 10) return "08:00";
-  if (h < 15) return "13:00";
-  if (h < 21) return "18:00";
-  return "eod";
+  return `${String(h).padStart(2, "0")}:00`;
 }
 
 // NPP public report URL builder

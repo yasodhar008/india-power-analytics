@@ -1,7 +1,13 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)",     "destination": "/index.html" }
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ],
   "build": {
     "env": {
@@ -9,44 +15,35 @@
     }
   },
   "functions": {
-    "api/fetch-snapshot.js":    { "maxDuration": 60 },
-    "api/fetch-npp.js":         { "maxDuration": 30 },
-    "api/fetch-cea-re.js":      { "maxDuration": 30 },
-    "api/fetch-cea-monthly.js": { "maxDuration": 45 }
-  },
-  "crons": [
-    {
-      "path": "/api/fetch-snapshot?snapshot=08:00",
-      "schedule": "30 2 * * *"
+    "api/fetch-snapshot.js": {
+      "maxDuration": 60
     },
-    {
-      "path": "/api/fetch-snapshot?snapshot=13:00",
-      "schedule": "30 7 * * *"
+    "api/fetch-npp.js": {
+      "maxDuration": 30
     },
-    {
-      "path": "/api/fetch-snapshot?snapshot=18:00",
-      "schedule": "30 12 * * *"
+    "api/fetch-cea-re.js": {
+      "maxDuration": 30
     },
-    {
-      "path": "/api/fetch-cea-re",
-      "schedule": "30 5 * * *"
-    },
-    {
-      "path": "/api/fetch-npp",
-      "schedule": "0 14 * * *"
-    },
-    {
-      "path": "/api/fetch-cea-monthly",
-      "schedule": "0 6 1 * *"
+    "api/fetch-cea-monthly.js": {
+      "maxDuration": 45
     }
-  ],
+  },
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin",  "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, x-cron-secret" }
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, x-cron-secret"
+        }
       ]
     }
   ]

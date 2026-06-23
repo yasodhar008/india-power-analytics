@@ -2,7 +2,8 @@ name: Hourly & Daily Ingest
 
 on:
   schedule:
-    - cron: '0 * * * *' # Every hour
+    - cron: '30 12 * * *'   # 12:30 UTC = 18:00 IST (safe window)
+
   workflow_dispatch:
     inputs:
       date:

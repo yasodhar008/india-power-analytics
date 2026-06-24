@@ -1,18 +1,14 @@
 /**
- * /api/fetch-npp  — v2 (NPP-first, no Puppeteer, proper XLS parsing)
+ * /api/fetch-npp  — v3 (zero external deps, pure binary scan)
  *
- * Downloads NPP dgr3 (All India fuel-wise daily MU totals, 9 KB XLS)
- * Parses with SheetJS, synthesises 24-hour MW profiles using India grid
- * diurnal shapes, then writes:
- *   power_generation  — 24 rows × up to 6 fuels
- *   power_demand      — 24 rows
- *   power_daily_summary — 1 row
+ * Downloads NPP dgr3 XLS (9 KB), extracts fuel-wise MU totals via
+ * binary text scan (no xlsx package needed — works in any serverless env),
+ * synthesises 24-hour MW profiles, writes to Supabase.
  *
- * Triggered by GitHub Actions cron at 14:00 UTC (19:30 IST) for YESTERDAY.
+ * Cron: GitHub Actions daily at 12:30 UTC (18:00 IST)
  * Manual: GET /api/fetch-npp?date=2026-06-17
  */
 
-import * as XLSX from 'xlsx'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -28,18 +24,18 @@ function yesterdayIST() {
   return d.toISOString().split('T')[0]
 }
 
-function nppUrl(date, num, fmt = 'xls') {
+function nppUrl(date, num) {
   const [y, m, d] = date.split('-')
-  return `https://npp.gov.in/public-reports/cea/daily/dgr/${d}-${m}-${y}/dgr${num}-${date}.${fmt}`
+  return `https://npp.gov.in/public-reports/cea/daily/dgr/${d}-${m}-${y}/dgr${num}-${date}.xls`
 }
 
-// ── Diurnal profile shapes (raw weights, normalised to sum=24) ───────────
+// ── Diurnal profiles (raw weights normalised so sum = 24) ────────────────
 const RAW = {
   SOLAR:   [0,0,0,0,0,0,0,  0.30,0.80,1.50,2.00,2.35,2.55,2.45,2.15,1.70,1.20,0.60,0.20,0,0,0,0,0],
   WIND:    [1.10,1.10,1.12,1.12,1.12,1.10,1.00,0.90,0.82,0.84,0.88,0.90,0.90,0.94,0.98,1.00,1.02,1.06,1.10,1.14,1.18,1.18,1.14,1.10],
   THERMAL: [0.95,0.93,0.91,0.90,0.91,0.94,0.99,1.05,1.08,1.06,1.02,0.98,0.97,0.97,0.98,0.98,0.99,1.03,1.09,1.12,1.10,1.07,1.03,0.99],
-  HYDRO:   [1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00],
-  NUCLEAR: [1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00],
+  HYDRO:   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  NUCLEAR: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
   GAS:     [0.85,0.82,0.80,0.80,0.82,0.88,0.98,1.05,1.08,1.05,1.02,1.00,1.00,1.00,1.00,1.00,1.02,1.08,1.15,1.18,1.15,1.10,1.03,0.93],
   DEMAND:  [0.86,0.83,0.80,0.78,0.79,0.83,0.90,0.97,1.05,1.10,1.10,1.07,1.04,1.03,1.02,1.02,1.04,1.07,1.12,1.16,1.15,1.11,1.04,0.94],
 }
@@ -50,31 +46,47 @@ for (const [k, raw] of Object.entries(RAW)) {
   PROFILES[k] = raw.map(v => (v * 24) / sum)
 }
 
-// ── Parse dgr3 XLS with SheetJS ──────────────────────────────────────────
-function parseDgr3(buf) {
-  const wb   = XLSX.read(new Uint8Array(buf), { type: 'array' })
-  const ws   = wb.Sheets[wb.SheetNames[0]]
-  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+// ── Binary text scan — extracts printable ASCII from XLS binary ──────────
+function parseDgr3Binary(buf) {
+  const bytes = new Uint8Array(buf)
+  // Extract printable ASCII strings separated by nulls/control chars
+  const strings = []
+  let cur = ''
+  for (let i = 0; i < bytes.length; i++) {
+    const c = bytes[i]
+    if (c >= 32 && c < 127) {
+      cur += String.fromCharCode(c)
+    } else {
+      if (cur.length >= 2) strings.push(cur.trim())
+      cur = ''
+    }
+  }
+  if (cur.length >= 2) strings.push(cur.trim())
 
-  const FUEL_MAP = {
+  // Match fuel labels to numeric values that follow them
+  const FUEL_KEYS = {
     thermal: 'THERMAL', coal: 'THERMAL', lignite: 'THERMAL',
     nuclear: 'NUCLEAR',
     hydro:   'HYDRO',
     gas:     'GAS',
     wind:    'WIND',
     solar:   'SOLAR',
-    total:   'TOTAL', 'grand total': 'TOTAL', 'all india': 'TOTAL',
+    total:   'TOTAL', 'grand total': 'TOTAL',
   }
 
   const figures = {}
-  for (const row of rows) {
-    const label = row.map(c => String(c || '').toLowerCase().trim()).find(s => s.length > 1) || ''
-    const numCells = row.map(c => parseFloat(String(c).replace(/,/g, ''))).filter(n => !isNaN(n) && n > 0)
-    if (!numCells.length) continue
-    const val = numCells[numCells.length - 1]
-    for (const [kw, fuel] of Object.entries(FUEL_MAP)) {
+  for (let i = 0; i < strings.length; i++) {
+    const label = strings[i].toLowerCase()
+    for (const [kw, fuel] of Object.entries(FUEL_KEYS)) {
       if (label.includes(kw) && !figures[fuel]) {
-        figures[fuel] = val
+        // Look ahead up to 8 tokens for first plausible MU value (100–2000 range)
+        for (let j = i + 1; j < Math.min(i + 8, strings.length); j++) {
+          const n = parseFloat(strings[j].replace(/,/g, ''))
+          if (!isNaN(n) && n >= 50 && n <= 6000) {
+            figures[fuel] = n
+            break
+          }
+        }
         break
       }
     }
@@ -82,7 +94,7 @@ function parseDgr3(buf) {
   return figures
 }
 
-// ── Synthesise 24-hour rows from daily MU totals ─────────────────────────
+// ── Synthesise hourly rows from daily MU totals ──────────────────────────
 function synthesiseHourly(date, figures) {
   const FUELS = ['SOLAR', 'WIND', 'THERMAL', 'HYDRO', 'NUCLEAR', 'GAS']
   const genRows = []
@@ -91,13 +103,11 @@ function synthesiseHourly(date, figures) {
     const mu = figures[fuel]
     if (!mu || mu <= 0) continue
     const avgMW   = (mu * 1000) / 24
-    const profile = PROFILES[fuel] || PROFILES.THERMAL
+    const profile = PROFILES[fuel]
     for (let h = 0; h < 24; h++) {
       genRows.push({
-        data_date:     date,
-        hour:          h,
-        source:        fuel,
-        value_mw:      Math.round(avgMW * profile[h]),
+        data_date: date, hour: h, source: fuel,
+        value_mw: Math.round(avgMW * profile[h]),
         snapshot_time: 'eod',
       })
     }
@@ -107,9 +117,8 @@ function synthesiseHourly(date, figures) {
   const demandMU   = figures.TOTAL || totalGenMU * 1.02
   const demAvgMW   = (demandMU * 1000) / 24
   const demRows = Array.from({ length: 24 }, (_, h) => ({
-    data_date:     date,
-    hour:          h,
-    value_mw:      Math.round(demAvgMW * PROFILES.DEMAND[h]),
+    data_date: date, hour: h,
+    value_mw: Math.round(demAvgMW * PROFILES.DEMAND[h]),
     snapshot_time: 'eod',
   }))
 
@@ -121,25 +130,20 @@ function buildSummary(date, figures, genRows, demRows) {
   const get  = src => genRows.filter(r => r.source === src).map(r => r.value_mw)
   const peak = arr => arr.length ? Math.max(...arr) : null
   const avg  = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0
-
-  const solar  = get('SOLAR')
-  const wind   = get('WIND')
-  const demand = demRows.map(r => r.value_mw)
+  const solar = get('SOLAR'), wind = get('WIND'), demand = demRows.map(r => r.value_mw)
   const avgDem = avg(demand)
-  const reShare = avgDem ? +((avg(solar) + avg(wind)) / avgDem * 100).toFixed(1) : null
-
   return {
     data_date:        date,
     peak_demand_mw:   peak(demand),
     peak_solar_mw:    peak(solar),
     peak_wind_mw:     peak(wind),
-    avg_re_share_pct: reShare,
-    total_solar_mu:   figures.SOLAR   || null,
-    total_wind_mu:    figures.WIND    || null,
+    avg_re_share_pct: avgDem ? +((avg(solar) + avg(wind)) / avgDem * 100).toFixed(1) : null,
+    total_solar_mu:   figures.SOLAR  || null,
+    total_wind_mu:    figures.WIND   || null,
     total_re_mu:      +((figures.SOLAR || 0) + (figures.WIND || 0)).toFixed(2) || null,
-    total_demand_mu:  figures.TOTAL   || null,
+    total_demand_mu:  figures.TOTAL  || null,
     data_sources:     ['npp-dgr3'],
-    notes: `NPP dgr3 EOD: solar=${figures.SOLAR}MU wind=${figures.WIND}MU thermal=${figures.THERMAL}MU total=${figures.TOTAL}MU`,
+    notes: `NPP dgr3 EOD: solar=${figures.SOLAR} wind=${figures.WIND} thermal=${figures.THERMAL} total=${figures.TOTAL}`,
   }
 }
 
@@ -154,20 +158,19 @@ export default async function handler(req, res) {
 
   const t0   = Date.now()
   const date = req.query.date || yesterdayIST()
-  console.log(`\n[fetch-npp v2] ${date}`)
+  console.log(`[fetch-npp v3] ${date}`)
 
-  // Try dgr3 first (9KB, cleanest), fallback to dgr1, dgr2
+  // Try dgr3 first (9 KB), fallback dgr1, dgr2
   let buf = null, reportNum = null
   for (const num of [3, 1, 2]) {
-    const url = nppUrl(date, num)
     try {
-      const r = await fetch(url, {
+      const r = await fetch(nppUrl(date, num), {
         headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://npp.gov.in' },
-        signal:  AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(20000),
       })
-      if (!r.ok) { console.warn(`  dgr${num}: HTTP ${r.status}`); continue }
+      if (!r.ok) continue
       const b = await r.arrayBuffer()
-      if (b.byteLength < 1000) { console.warn(`  dgr${num}: too small`); continue }
+      if (b.byteLength < 1000) continue
       buf = b; reportNum = num
       console.log(`  ✓ dgr${num}: ${Math.round(b.byteLength / 1024)} KB`)
       break
@@ -180,42 +183,25 @@ export default async function handler(req, res) {
     await supabase.from('fetch_log').insert({
       snapshot: 'npp-eod', status: 'failed', sources: ['npp.gov.in'],
       rows_written: 0, duration_ms: Date.now() - t0,
-      error_msg: `No NPP reports available for ${date} — published ~17:00-18:00 IST`,
+      error_msg: `No NPP reports for ${date} — published ~17:00-18:00 IST`,
     })
-    return res.status(200).json({
-      ok: false, date, status: 'failed',
-      note: 'NPP reports not yet published. They appear around 17:00–18:00 IST.',
-    })
+    return res.status(200).json({ ok: false, date, status: 'failed',
+      note: 'NPP not yet published. Available ~17:00-18:00 IST.' })
   }
 
-  // Parse XLS
-  let figures
-  try {
-    figures = parseDgr3(buf)
-    console.log('  Parsed figures:', figures)
-  } catch (e) {
-    console.error('  XLS parse error:', e.message)
-    await supabase.from('fetch_log').insert({
-      snapshot: 'npp-eod', status: 'failed', sources: ['npp.gov.in'],
-      rows_written: 0, duration_ms: Date.now() - t0,
-      error_msg: `XLS parse error: ${e.message}`,
-    })
-    return res.status(500).json({ ok: false, error: `XLS parse: ${e.message}` })
-  }
+  const figures = parseDgr3Binary(buf)
+  console.log('  Figures:', figures)
 
   if (!figures.SOLAR && !figures.WIND && !figures.THERMAL) {
     await supabase.from('fetch_log').insert({
       snapshot: 'npp-eod', status: 'partial', sources: [`npp-dgr${reportNum}`],
       rows_written: 0, duration_ms: Date.now() - t0,
-      error_msg: 'XLS downloaded but no fuel figures extracted — format may have changed',
+      error_msg: 'XLS downloaded but no fuel figures found',
     })
-    return res.status(200).json({
-      ok: false, date, status: 'partial', figures,
-      note: 'XLS downloaded but fuel totals not found. dgr3 format may have changed.',
-    })
+    return res.status(200).json({ ok: false, date, status: 'partial', figures,
+      note: 'Downloaded but no fuel totals extracted. Format may have changed.' })
   }
 
-  // Synthesise and save
   const { genRows, demRows } = synthesiseHourly(date, figures)
   const summary = buildSummary(date, figures, genRows, demRows)
   const errors  = []
@@ -223,7 +209,7 @@ export default async function handler(req, res) {
 
   const { error: e1 } = await supabase.from('power_generation')
     .upsert(genRows, { onConflict: 'data_date,hour,source' })
-  if (e1) errors.push(`generation: ${e1.message}`)
+  if (e1) errors.push(`gen: ${e1.message}`)
   else    rowsWritten += genRows.length
 
   const { error: e2 } = await supabase.from('power_demand')
@@ -246,12 +232,11 @@ export default async function handler(req, res) {
   })
 
   return res.status(200).json({
-    ok: true, date, status,
-    dgr: reportNum, figures,
+    ok: true, date, status, dgr: reportNum, figures,
     genRows: genRows.length, demRows: demRows.length,
     rowsWritten, ms, errors,
-    note: `Wrote ${genRows.length} gen + ${demRows.length} demand rows synthesised from NPP dgr${reportNum} daily MU totals`,
+    note: `Wrote ${rowsWritten} rows from NPP dgr${reportNum}`,
   })
 }
 
-export const config = { runtime: 'nodejs', maxDuration: 30, memory: 512 }
+export const config = { runtime: 'nodejs', maxDuration: 30 }

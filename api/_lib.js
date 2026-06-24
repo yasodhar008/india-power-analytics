@@ -48,4 +48,4 @@ export const err = (res, msg, code = 500) =>
   res.status(code).json({ ok: false, error: msg });
 
 // All API routes use Node.js runtime (Chromium needs Node, not Edge)
-export const nodeConfig = { runtime: "nodejs", maxDuration: 60 };
+export const nodeConfig = { maxDuration: 60 };

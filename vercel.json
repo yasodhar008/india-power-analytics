@@ -15,9 +15,6 @@
     }
   },
   "functions": {
-    "api/fetch-snapshot.js": {
-      "maxDuration": 60
-    },
     "api/fetch-npp.js": {
       "maxDuration": 30
     },

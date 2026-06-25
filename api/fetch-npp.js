@@ -46,24 +46,17 @@ for (const [k, raw] of Object.entries(RAW)) {
   PROFILES[k] = raw.map(v => (v * 24) / sum)
 }
 
-// ── Binary text scan — extracts printable ASCII from XLS binary ──────────
+// ── XLS parser — handles UTF-16LE strings + IEEE 754 float values ────────
+// XLS (BIFF8) stores labels in UTF-16LE and numbers as IEEE 754 doubles.
+// We decode labels via TextDecoder('utf-16le') and extract doubles from
+// the raw buffer at NUMBER/RK record positions near each label.
 function parseDgr3Binary(buf) {
   const bytes = new Uint8Array(buf)
-  // Extract printable ASCII strings separated by nulls/control chars
-  const strings = []
-  let cur = ''
-  for (let i = 0; i < bytes.length; i++) {
-    const c = bytes[i]
-    if (c >= 32 && c < 127) {
-      cur += String.fromCharCode(c)
-    } else {
-      if (cur.length >= 2) strings.push(cur.trim())
-      cur = ''
-    }
-  }
-  if (cur.length >= 2) strings.push(cur.trim())
+  const view  = new DataView(buf)
 
-  // Match fuel labels to numeric values that follow them
+  // ── Step 1: Decode UTF-16LE to find label positions ─────────────────
+  const text16 = new TextDecoder('utf-16le').decode(buf)
+
   const FUEL_KEYS = {
     thermal: 'THERMAL', coal: 'THERMAL', lignite: 'THERMAL',
     nuclear: 'NUCLEAR',
@@ -71,26 +64,62 @@ function parseDgr3Binary(buf) {
     gas:     'GAS',
     wind:    'WIND',
     solar:   'SOLAR',
-    total:   'TOTAL', 'grand total': 'TOTAL',
+    total:   'TOTAL',
   }
 
+  // ── Step 2: Collect all IEEE 754 doubles that look like MU values ────
+  // Scan every 2 bytes (aligned to record boundaries) for plausible doubles
+  const muValues = []
+  for (let i = 0; i <= buf.byteLength - 8; i += 2) {
+    try {
+      const v = view.getFloat64(i, true) // little-endian
+      if (v >= 10 && v <= 15000 && isFinite(v) && !isNaN(v)) {
+        muValues.push({ pos: i, val: +v.toFixed(2) })
+      }
+    } catch(_) {}
+  }
+
+  // ── Step 3: For each fuel label in UTF-16 text, find nearest MU value
   const figures = {}
-  for (let i = 0; i < strings.length; i++) {
-    const label = strings[i].toLowerCase()
-    for (const [kw, fuel] of Object.entries(FUEL_KEYS)) {
-      if (label.includes(kw) && !figures[fuel]) {
-        // Look ahead up to 8 tokens for first plausible MU value (100–2000 range)
-        for (let j = i + 1; j < Math.min(i + 8, strings.length); j++) {
-          const n = parseFloat(strings[j].replace(/,/g, ''))
-          if (!isNaN(n) && n >= 50 && n <= 6000) {
-            figures[fuel] = n
-            break
+  for (const [kw, fuel] of Object.entries(FUEL_KEYS)) {
+    if (figures[fuel]) continue
+    // char position in utf-16le text = byte position / 2
+    const charIdx = text16.toLowerCase().indexOf(kw)
+    if (charIdx < 0) continue
+    const bytePos = charIdx * 2
+
+    // Find closest plausible double within ±2KB of the label
+    let best = null, bestDist = Infinity
+    for (const { pos, val } of muValues) {
+      const dist = Math.abs(pos - bytePos)
+      if (dist < 2048 && dist < bestDist) {
+        best = val; bestDist = dist
+      }
+    }
+    if (best !== null) figures[fuel] = best
+  }
+
+  // ── Step 4: Fallback — also try ASCII scan for older XLS formats ─────
+  if (Object.keys(figures).length === 0) {
+    let cur = '', astrings = []
+    for (let i = 0; i < bytes.length; i++) {
+      const c = bytes[i]
+      if (c >= 32 && c < 127) { cur += String.fromCharCode(c) }
+      else { if (cur.length >= 3) astrings.push(cur.trim()); cur = '' }
+    }
+    for (let i = 0; i < astrings.length; i++) {
+      const label = astrings[i].toLowerCase()
+      for (const [kw, fuel] of Object.entries(FUEL_KEYS)) {
+        if (label.includes(kw) && !figures[fuel]) {
+          for (let j = i+1; j < Math.min(i+10, astrings.length); j++) {
+            const n = parseFloat(astrings[j].replace(/,/g,''))
+            if (!isNaN(n) && n >= 10 && n <= 15000) { figures[fuel] = n; break }
           }
         }
-        break
       }
     }
   }
+
   return figures
 }
 

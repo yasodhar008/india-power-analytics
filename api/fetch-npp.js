@@ -8,7 +8,9 @@
  * Manual: GET /api/fetch-npp?date=2026-06-25
  */
 
-import * as XLSX from 'xlsx'
+import { createRequire } from 'module'
+const require = createRequire(import.meta.url)
+const XLSX = require('xlsx')
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(

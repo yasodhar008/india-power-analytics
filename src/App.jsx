@@ -9,6 +9,7 @@ import Intelligence from './components/Intelligence'
 import Sources      from './components/Sources'
 import AuthPage     from './components/AuthPage'
 import Projects     from './components/Projects'
+import TenderIntelligence from './components/TenderIntelligence'
 import { useAuth }  from './lib/AuthContext'
 import './index.css'
 
@@ -18,6 +19,7 @@ const PUBLIC_TABS = [
   { id: 'history',      label: 'Trends' },
   { id: 'regional',     label: 'Regional' },
   { id: 'intelligence', label: '🔋 Intelligence' },
+  { id: 'tenders',      label: 'Tenders' },
   { id: 'projects',     label: 'Projects' },
 ]
 
@@ -75,6 +77,7 @@ export default function App() {
         {tab === 'history'      && <History />}
         {tab === 'regional'     && <Regional />}
         {tab === 'intelligence' && <Intelligence />}
+        {tab === 'tenders'      && <TenderIntelligence onAnalyseTender={() => {}} />}
         {tab === 'projects'     && <Projects />}
         {tab === 'upload'       && <Upload onUploaded={() => setTab('dashboard')} />}
         {tab === 'sources'      && <Sources />}

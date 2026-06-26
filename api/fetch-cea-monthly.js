@@ -338,4 +338,4 @@ export default async function handler(req, res) {
   });
 }
 
-export const config = { runtime: "nodejs", maxDuration: 45, memory: 512 };
+export const config = { maxDuration: 45 };

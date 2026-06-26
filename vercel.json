@@ -15,9 +15,6 @@
     }
   },
   "functions": {
-    "api/fetch-snapshot.js": {
-      "maxDuration": 60
-    },
     "api/fetch-npp.js": {
       "maxDuration": 30
     },
@@ -26,6 +23,9 @@
     },
     "api/fetch-cea-monthly.js": {
       "maxDuration": 45
+    },
+    "api/ping.js": {
+      "maxDuration": 5
     }
   },
   "headers": [

@@ -1,14 +1,14 @@
 /**
- * /api/fetch-npp  — v3 (zero external deps, pure binary scan)
+ * /api/fetch-npp  — v4 (SheetJS XLS parser, zero puppeteer)
  *
- * Downloads NPP dgr3 XLS (9 KB), extracts fuel-wise MU totals via
- * binary text scan (no xlsx package needed — works in any serverless env),
- * synthesises 24-hour MW profiles, writes to Supabase.
+ * Downloads NPP dgr3 (9 KB XLS), parses with SheetJS, synthesises
+ * 24-hour MW profiles from daily MU totals, writes to Supabase.
  *
  * Cron: GitHub Actions daily at 12:30 UTC (18:00 IST)
- * Manual: GET /api/fetch-npp?date=2026-06-17
+ * Manual: GET /api/fetch-npp?date=2026-06-25
  */
 
+import * as XLSX from 'xlsx'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -29,9 +29,9 @@ function nppUrl(date, num) {
   return `https://npp.gov.in/public-reports/cea/daily/dgr/${d}-${m}-${y}/dgr${num}-${date}.xls`
 }
 
-// ── Diurnal profiles (raw weights normalised so sum = 24) ────────────────
+// ── Diurnal profiles (raw weights normalised so sum = 24) ───────────────
 const RAW = {
-  SOLAR:   [0,0,0,0,0,0,0,  0.30,0.80,1.50,2.00,2.35,2.55,2.45,2.15,1.70,1.20,0.60,0.20,0,0,0,0,0],
+  SOLAR:   [0,0,0,0,0,0,0,0.30,0.80,1.50,2.00,2.35,2.55,2.45,2.15,1.70,1.20,0.60,0.20,0,0,0,0,0],
   WIND:    [1.10,1.10,1.12,1.12,1.12,1.10,1.00,0.90,0.82,0.84,0.88,0.90,0.90,0.94,0.98,1.00,1.02,1.06,1.10,1.14,1.18,1.18,1.14,1.10],
   THERMAL: [0.95,0.93,0.91,0.90,0.91,0.94,0.99,1.05,1.08,1.06,1.02,0.98,0.97,0.97,0.98,0.98,0.99,1.03,1.09,1.12,1.10,1.07,1.03,0.99],
   HYDRO:   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -46,84 +46,44 @@ for (const [k, raw] of Object.entries(RAW)) {
   PROFILES[k] = raw.map(v => (v * 24) / sum)
 }
 
-// ── XLS parser — handles UTF-16LE strings + IEEE 754 float values ────────
-// XLS (BIFF8) stores labels in UTF-16LE and numbers as IEEE 754 doubles.
-// We decode labels via TextDecoder('utf-16le') and extract doubles from
-// the raw buffer at NUMBER/RK record positions near each label.
-function parseDgr3Binary(buf) {
-  const bytes = new Uint8Array(buf)
-  const view  = new DataView(buf)
+// ── Parse dgr3 XLS with SheetJS ─────────────────────────────────────────
+function parseDgr3(buf) {
+  const wb   = XLSX.read(new Uint8Array(buf), { type: 'array' })
+  const ws   = wb.Sheets[wb.SheetNames[0]]
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
 
-  // ── Step 1: Decode UTF-16LE to find label positions ─────────────────
-  const text16 = new TextDecoder('utf-16le').decode(buf)
+  console.log(`  Sheet rows: ${rows.length}, sample:`, JSON.stringify(rows.slice(0,5)))
 
-  const FUEL_KEYS = {
+  const FUEL_MAP = {
     thermal: 'THERMAL', coal: 'THERMAL', lignite: 'THERMAL',
     nuclear: 'NUCLEAR',
     hydro:   'HYDRO',
     gas:     'GAS',
     wind:    'WIND',
     solar:   'SOLAR',
-    total:   'TOTAL',
+    total:   'TOTAL', 'grand total': 'TOTAL',
   }
 
-  // ── Step 2: Collect all IEEE 754 doubles that look like MU values ────
-  // Scan every 2 bytes (aligned to record boundaries) for plausible doubles
-  const muValues = []
-  for (let i = 0; i <= buf.byteLength - 8; i += 2) {
-    try {
-      const v = view.getFloat64(i, true) // little-endian
-      if (v >= 10 && v <= 15000 && isFinite(v) && !isNaN(v)) {
-        muValues.push({ pos: i, val: +v.toFixed(2) })
-      }
-    } catch(_) {}
-  }
-
-  // ── Step 3: For each fuel label in UTF-16 text, find nearest MU value
   const figures = {}
-  for (const [kw, fuel] of Object.entries(FUEL_KEYS)) {
-    if (figures[fuel]) continue
-    // char position in utf-16le text = byte position / 2
-    const charIdx = text16.toLowerCase().indexOf(kw)
-    if (charIdx < 0) continue
-    const bytePos = charIdx * 2
+  for (const row of rows) {
+    // Find label in any cell
+    const label = row.map(c => String(c || '').toLowerCase().trim()).find(s => s.length > 1) || ''
+    // Find last numeric cell in row
+    const nums = row.map(c => parseFloat(String(c).replace(/,/g, ''))).filter(n => !isNaN(n) && n > 0)
+    if (!nums.length) continue
+    const val = nums[nums.length - 1]
 
-    // Find closest plausible double within ±2KB of the label
-    let best = null, bestDist = Infinity
-    for (const { pos, val } of muValues) {
-      const dist = Math.abs(pos - bytePos)
-      if (dist < 2048 && dist < bestDist) {
-        best = val; bestDist = dist
-      }
-    }
-    if (best !== null) figures[fuel] = best
-  }
-
-  // ── Step 4: Fallback — also try ASCII scan for older XLS formats ─────
-  if (Object.keys(figures).length === 0) {
-    let cur = '', astrings = []
-    for (let i = 0; i < bytes.length; i++) {
-      const c = bytes[i]
-      if (c >= 32 && c < 127) { cur += String.fromCharCode(c) }
-      else { if (cur.length >= 3) astrings.push(cur.trim()); cur = '' }
-    }
-    for (let i = 0; i < astrings.length; i++) {
-      const label = astrings[i].toLowerCase()
-      for (const [kw, fuel] of Object.entries(FUEL_KEYS)) {
-        if (label.includes(kw) && !figures[fuel]) {
-          for (let j = i+1; j < Math.min(i+10, astrings.length); j++) {
-            const n = parseFloat(astrings[j].replace(/,/g,''))
-            if (!isNaN(n) && n >= 10 && n <= 15000) { figures[fuel] = n; break }
-          }
-        }
+    for (const [kw, fuel] of Object.entries(FUEL_MAP)) {
+      if (label.includes(kw) && !figures[fuel]) {
+        figures[fuel] = val
+        break
       }
     }
   }
-
   return figures
 }
 
-// ── Synthesise hourly rows from daily MU totals ──────────────────────────
+// ── Synthesise hourly rows ───────────────────────────────────────────────
 function synthesiseHourly(date, figures) {
   const FUELS = ['SOLAR', 'WIND', 'THERMAL', 'HYDRO', 'NUCLEAR', 'GAS']
   const genRows = []
@@ -131,12 +91,11 @@ function synthesiseHourly(date, figures) {
   for (const fuel of FUELS) {
     const mu = figures[fuel]
     if (!mu || mu <= 0) continue
-    const avgMW   = (mu * 1000) / 24
-    const profile = PROFILES[fuel]
+    const avgMW = (mu * 1000) / 24
     for (let h = 0; h < 24; h++) {
       genRows.push({
         data_date: date, hour: h, source: fuel,
-        value_mw: Math.round(avgMW * profile[h]),
+        value_mw: Math.round(avgMW * PROFILES[fuel][h]),
         snapshot_time: 'eod',
       })
     }
@@ -154,7 +113,7 @@ function synthesiseHourly(date, figures) {
   return { genRows, demRows }
 }
 
-// ── Build daily summary ───────────────────────────────────────────────────
+// ── Build daily summary ──────────────────────────────────────────────────
 function buildSummary(date, figures, genRows, demRows) {
   const get  = src => genRows.filter(r => r.source === src).map(r => r.value_mw)
   const peak = arr => arr.length ? Math.max(...arr) : null
@@ -172,11 +131,11 @@ function buildSummary(date, figures, genRows, demRows) {
     total_re_mu:      +((figures.SOLAR || 0) + (figures.WIND || 0)).toFixed(2) || null,
     total_demand_mu:  figures.TOTAL  || null,
     data_sources:     ['npp-dgr3'],
-    notes: `NPP dgr3 EOD: solar=${figures.SOLAR} wind=${figures.WIND} thermal=${figures.THERMAL} total=${figures.TOTAL}`,
+    notes: `NPP dgr3: solar=${figures.SOLAR} wind=${figures.WIND} thermal=${figures.THERMAL} total=${figures.TOTAL}`,
   }
 }
 
-// ── Main handler ──────────────────────────────────────────────────────────
+// ── Main handler ─────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== 'GET')
     return res.status(405).json({ error: 'Method not allowed' })
@@ -187,9 +146,8 @@ export default async function handler(req, res) {
 
   const t0   = Date.now()
   const date = req.query.date || yesterdayIST()
-  console.log(`[fetch-npp v3] ${date}`)
+  console.log(`[fetch-npp v4] ${date}`)
 
-  // Try dgr3 first (9 KB), fallback dgr1, dgr2
   let buf = null, reportNum = null
   for (const num of [3, 1, 2]) {
     try {
@@ -197,7 +155,7 @@ export default async function handler(req, res) {
         headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://npp.gov.in' },
         signal: AbortSignal.timeout(20000),
       })
-      if (!r.ok) continue
+      if (!r.ok) { console.warn(`  dgr${num}: HTTP ${r.status}`); continue }
       const b = await r.arrayBuffer()
       if (b.byteLength < 1000) continue
       buf = b; reportNum = num
@@ -218,17 +176,28 @@ export default async function handler(req, res) {
       note: 'NPP not yet published. Available ~17:00-18:00 IST.' })
   }
 
-  const figures = parseDgr3Binary(buf)
-  console.log('  Figures:', figures)
+  let figures
+  try {
+    figures = parseDgr3(buf)
+    console.log('  Figures:', figures)
+  } catch (e) {
+    console.error('  Parse error:', e.message)
+    await supabase.from('fetch_log').insert({
+      snapshot: 'npp-eod', status: 'failed', sources: [`npp-dgr${reportNum}`],
+      rows_written: 0, duration_ms: Date.now() - t0,
+      error_msg: `Parse error: ${e.message}`,
+    })
+    return res.status(500).json({ ok: false, error: e.message })
+  }
 
   if (!figures.SOLAR && !figures.WIND && !figures.THERMAL) {
     await supabase.from('fetch_log').insert({
       snapshot: 'npp-eod', status: 'partial', sources: [`npp-dgr${reportNum}`],
       rows_written: 0, duration_ms: Date.now() - t0,
-      error_msg: 'XLS downloaded but no fuel figures found',
+      error_msg: 'No fuel figures found — logging sheet sample for diagnosis',
     })
     return res.status(200).json({ ok: false, date, status: 'partial', figures,
-      note: 'Downloaded but no fuel totals extracted. Format may have changed.' })
+      note: 'Downloaded but no fuel totals extracted.' })
   }
 
   const { genRows, demRows } = synthesiseHourly(date, figures)

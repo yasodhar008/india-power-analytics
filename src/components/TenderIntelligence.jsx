@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 
@@ -226,9 +227,9 @@ export default function TenderIntelligence({onAnalyseTender}) {
       setLoadingData(false);
     })();
   },[]);
-  const [statusFilter, setStatusFilter] = useState<"all"|"open"|"upcoming"|"awarded">("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [stateFilter, setStateFilter] = useState("all");
-  const [agencyFilter, setAgencyFilter] = useState<"all"|"central"|"state">("all");
+  const [agencyFilter, setAgencyFilter] = useState("all");
   const [schemeTypeFilter, setSchemeTypeFilter] = useState("all");
   const [stateSchemeFilter, setStateSchemeFilter] = useState("all");
 

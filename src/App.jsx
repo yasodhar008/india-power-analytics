@@ -10,6 +10,8 @@ import Sources      from './components/Sources'
 import AuthPage     from './components/AuthPage'
 import Projects     from './components/Projects'
 import TenderIntelligence from './components/TenderIntelligence'
+import BessAnalytica from './components/BessAnalytica'
+import AdminPanel from './components/AdminPanel'
 import { useAuth }  from './lib/AuthContext'
 import './index.css'
 
@@ -20,6 +22,7 @@ const PUBLIC_TABS = [
   { id: 'regional',     label: 'Regional' },
   { id: 'intelligence', label: '🔋 Intelligence' },
   { id: 'tenders',      label: 'Tenders' },
+  { id: 'bess',         label: 'BESS Analytica' },
   { id: 'projects',     label: 'Projects' },
 ]
 
@@ -27,6 +30,7 @@ const ADMIN_TABS = [
   { id: 'upload',       label: 'Upload' },
   { id: 'sources',      label: 'Sources' },
   { id: 'status',       label: 'Status ◉' },
+  { id: 'admin',        label: 'Admin Panel 🔒' },
 ]
 
 export default function App() {
@@ -78,6 +82,8 @@ export default function App() {
         {tab === 'regional'     && <Regional />}
         {tab === 'intelligence' && <Intelligence />}
         {tab === 'tenders'      && <TenderIntelligence onAnalyseTender={() => {}} />}
+        {tab === 'bess'         && <BessAnalytica />}
+        {tab === 'admin'        && <AdminPanel />}
         {tab === 'projects'     && <Projects />}
         {tab === 'upload'       && <Upload onUploaded={() => setTab('dashboard')} />}
         {tab === 'sources'      && <Sources />}

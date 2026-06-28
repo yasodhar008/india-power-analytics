@@ -10,7 +10,7 @@ import Sources      from './components/Sources'
 import AuthPage     from './components/AuthPage'
 import Projects     from './components/Projects'
 import TenderIntelligence from './components/TenderIntelligence'
-import BessAnalytica from './components/BessAnalytica'
+import BESSAnalytica from './components/BessAnalytica'
 import AdminPanel from './components/AdminPanel'
 import { useAuth }  from './lib/AuthContext'
 import './index.css'
@@ -82,7 +82,7 @@ export default function App() {
         {tab === 'regional'     && <Regional />}
         {tab === 'intelligence' && <Intelligence />}
         {tab === 'tenders'      && <TenderIntelligence onAnalyseTender={() => {}} />}
-        {tab === 'bess'         && <BessAnalytica />}
+        {tab === 'bess'         && <BESSAnalytica />}
         {tab === 'admin'        && <AdminPanel />}
         {tab === 'projects'     && <Projects />}
         {tab === 'upload'       && <Upload onUploaded={() => setTab('dashboard')} />}

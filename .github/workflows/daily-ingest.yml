@@ -45,3 +45,10 @@ jobs:
           curl -sf --max-time 60 \
             -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
             "${{ secrets.VERCEL_PRODUCTION_URL }}/api/fetch-npp?date=${{ steps.date.outputs.yesterday }}" || true
+
+      - name: Fetch PSP Report (08:30 IST)
+        if: steps.date.outputs.hour == '08:00' || github.event_name == 'workflow_dispatch'
+        run: |
+          curl -sf --max-time 60 \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.VERCEL_PRODUCTION_URL }}/api/psp-report" || true
